@@ -25,6 +25,9 @@ class Field:
 
     def __str__(self):
         return str(self.value)
+    
+    def __eq__(self, __obj: object) -> bool:
+        return self._value == __obj._value
 
     @property
     def value(self):
@@ -42,7 +45,7 @@ class Name(Field):
 
     @value.setter
     def value(self, value: str):
-        if type(value) != str:
+        if not isinstance(value, str):
             raise InvalidFieldType("name")
         elif len(value) == 0:
             raise InvalidNameError
@@ -56,7 +59,7 @@ class Phone(Field):
 
     @value.setter
     def value(self, value: str):
-        if type(value) != str:
+        if not isinstance(value, str):
             raise InvalidFieldType("phone")
         elif len(value) < 0:
             raise InvalidPhoneLengthError
@@ -67,15 +70,20 @@ class Phone(Field):
 
 
 class Record:
-    def __init__(self, name):
+    def __init__(self, name: str, phone: str = None):
         self.name = Name(name)
         self.phones: list[Phone] = []
+        if phone:
+            self.add_phone(phone)
 
     def __str__(self):
         return f"Contact name: {self.name.value}, phones: {'; '.join(p.value for p in self.phones)}"
 
     def add_phone(self, phone: str):
-        self.phones.append(Phone(phone))
+        new_phone = Phone(phone)
+        if new_phone not in self.phones:
+            self.phones.append(new_phone)
+        return f"{new_phone} add to {self.name}"
 
     def delete_phone(self, phone_str: str):
         phone = self.find_phone(phone_str)
@@ -83,9 +91,14 @@ class Record:
             self.phones.remove(phone)
 
     def edit_phone(self, prev_phone: str, next_phone: str):
-        phone = self.find_phone(prev_phone)
-        if phone:
-            phone.value = next_phone
+        # phone = self.find_phone(prev_phone)
+        new_phone = Phone(next_phone)
+        idx = self.phones.index(Phone(prev_phone))
+        if idx >= 0 and new_phone not in self.phones:
+            # phone.value = next_phone
+            self.phones[idx] = new_phone
+            return f"Change {prev_phone} to {new_phone}"
+        return f"No phone {prev_phone} or {new_phone} present in contact book"
 
     def find_phone(self, phone_str: str) -> Phone:
         phone = None
@@ -97,8 +110,9 @@ class Record:
 
 
 class AddressBook(UserDict):
-    def add_record(self, record: Record):
+    def add_record(self, record: Record) -> str:
         self.data[record.name.value] = record
+        return f"{record} add successful"
 
     def find(self, name: str) -> Record:
         return self.data[name] if name in self.data else None
