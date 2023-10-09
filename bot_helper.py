@@ -1,3 +1,6 @@
+from assistant_entities import Record, AddressBook
+
+
 def input_error(func):
     def inner(args, contacts):
         try:
@@ -18,20 +21,22 @@ def hello_command_handler(*_):
 
 
 @input_error
-def add_contact_handler(args, contacts):
+def add_contact_handler(args, contacts: AddressBook):
     name, phone = args
-    contacts[name] = phone
-    return "Contact added."
+    rec = contacts.get(name)
+    if not rec:
+        return contacts.add_record(Record(name, phone))
+    return f"{rec} present in address book."
 
 
 @input_error
-def change_contact_handler(args, contacts):
-    name, phone = args
-    if name in contacts:
-        contacts[name] = phone
-        return "Contact updated."
+def change_contact_handler(args, contacts: AddressBook):
+    name, old_phone, new_phone = args
+    rec: Record = contacts.get(name)
+    if rec:
+        return rec.edit_phone(old_phone, new_phone)
     else:
-        raise KeyError
+        return f"{name} not in contacts."
 
 
 @input_error
@@ -64,7 +69,7 @@ def parse_input(user_input):
 
 
 def main():
-    contacts = {}
+    contacts = AddressBook()
     print("Welcome to the assistant bot!")
     while True:
         user_input = input("Enter a command: ")
